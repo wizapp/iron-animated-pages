@@ -3,7 +3,7 @@
 Copyright (c) 2017 WizApp. All rights reserved.
 -->
 
-<link rel="import" href="../polymer-element.html">
+<link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../iron-resizable-behavior/iron-resizable-behavior.html">
 <link rel="import" href="../iron-selector/iron-selectable.html">
 
@@ -37,7 +37,7 @@ Copyright (c) 2017 WizApp. All rights reserved.
      * @polymer
      * @demo demo/index.html
      */
-    class IronAnimatedPages extends Polymer.Element {
+    class IronAnimatedPages extends Polymer.mixinBehaviors([Polymer.IronResizableBehavior, Polymer.IronSelectableBehavior], Polymer.Element) {
       static get is() { return 'iron-animated-pages'; }
       static get properties() {
         return {
