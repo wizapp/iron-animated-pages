@@ -1,0 +1,173 @@
+<!--
+@license
+Copyright (c) 2017 WizApp. All rights reserved.
+-->
+
+<link rel="import" href="../polymer-element.html">
+<link rel="import" href="../iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../iron-selector/iron-selectable.html">
+
+<dom-module id="iron-animated-pages">
+  <template>
+    <style>
+      :host {
+        display: block;
+        overflow: hidden;
+      }
+
+      :host>div {
+        position: relative;
+      }
+
+      ::slotted(*) {
+        position: absolute;
+      }
+    </style>
+    <div>
+      <slot></slot>
+    </div>
+  </template>
+
+  <script>
+    /**
+     * `iron-animated-pages`
+     * Simple animated content switcher
+     *
+     * @customElement
+     * @polymer
+     * @demo demo/index.html
+     */
+    class IronAnimatedPages extends Polymer.Element {
+      static get is() { return 'iron-animated-pages'; }
+      static get properties() {
+        return {
+          selected: String,
+          attrForSelected: String,
+          items: {
+            observer: '_itemsChanged',
+          },
+          _animating: {
+            type: Boolean,
+            value: false,
+          },
+          animation: {
+            type: String,
+            value: 'fade',  // 'fade' or 'slide'
+          },
+          animationDuration: {
+            type: Number,
+            value: 450.0,  // Milliseconds
+          },
+          animationEasing: {
+            type: String,
+            value: 'ease-in-out',
+          }
+        };
+      }
+
+      static get observers() {
+        return ['_selectedAndItems(selected,items)'];
+      }
+
+      _itemsChanged(items) {
+        items.forEach(item => { item.style.display = 'none'; });
+      }
+
+      _selectedAndItems(selected, items) {
+        if (items && items.length > 0 && selected) {
+          const selectedIndex = this._valueToIndex(selected);
+          const selectedElement = items[selectedIndex];
+          selectedElement.style.display = 'block';
+        }
+      }
+
+      previous() {
+        if (this._animating) {
+          return;
+        }
+        const oldSelectedIndex = this._valueToIndex(this.selected);
+        const oldSelectedElement = this.items[oldSelectedIndex];
+
+        this.selectPrevious();
+
+        const selectedIndex = this._valueToIndex(this.selected);
+        const selectedElement = this.items[selectedIndex];
+
+        this._animate(oldSelectedElement, selectedElement, true)
+      }
+      next() {
+        if (this._animating) {
+          return;
+        }
+        const oldSelectedIndex = this._valueToIndex(this.selected);
+        const oldSelectedElement = this.items[oldSelectedIndex];
+
+        super.selectNext();
+
+        const selectedIndex = this._valueToIndex(this.selected);
+        const selectedElement = this.items[selectedIndex];
+
+        this._animate(oldSelectedElement, selectedElement, false)
+      }
+
+      _animate(oldElement, newElement, nextToPrevious) {
+        this._animating = true;
+        const animationFinishedCallback = () => {
+          oldElement.style.display = 'none';
+          this._animating = false;
+        };
+
+        switch (this.animation) {
+          case 'fade':
+            this._animateFade(oldElement, newElement, nextToPrevious, animationFinishedCallback);
+            break;
+          case 'slide':
+            this._animateSlide(oldElement, newElement, nextToPrevious, animationFinishedCallback);
+            break;
+          default:
+            if (animationFinishedCallback) {
+              animationFinishedCallback();
+            }
+            break;
+        }
+      }
+
+      _animateSlide(oldElement, newElement, leftToRight, animationFinishedCallback) {
+        this._translate(newElement, leftToRight ? -this.offsetWidth : this.offsetWidth, 0);
+        this._translate(oldElement, 0, leftToRight ? this.offsetWidth : -this.offsetWidth, animationFinishedCallback);
+      }
+      _animateFade(oldElement, newElement, nextToPrevious, animationFinishedCallback) {
+        this._fade(newElement, true, false);
+        this._fade(oldElement, false, false, animationFinishedCallback);
+      }
+
+      _translate(element, fromX, toX, cb) {
+        element.style.display = "block";
+        const animation = element.animate([
+          { transform: `translate3d(${fromX}px, 0, 0)` },
+          { transform: `translate3d(${toX}px, 0, 0)` },
+        ], {
+            fill: 'forwards',
+            easing: 'ease-in-out',
+            duration: 450.0,
+          })
+        animation.onfinish = cb;
+      }
+      _fade(element, fadeIn, backToFront, cb) {
+        let hiddenProperties = { transform: backToFront ? 'scale(0.97)' : 'scale(1.03)', opacity: 0 }
+        let visibleProperties = { transform: 'scale(1.0)', opacity: 1 }
+        const animation = element.animate([
+          fadeIn ? hiddenProperties : visibleProperties,
+          fadeIn ? visibleProperties : hiddenProperties,
+        ], {
+            fill: 'forwards',
+            easing: this.animationEasing,
+            duration: this.animationDuration,
+          })
+        animation.onfinish = cb;
+      }
+    }
+
+    window.customElements.define(IronAnimatedPages.is, IronAnimatedPages);
+  </script>
+</dom-module>
